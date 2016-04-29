@@ -655,8 +655,10 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
       
       byte[] data = this.loadSessionDataFromRedis( redisSession.getId() ); 
       
-      // #1 data is null (includes NULL_SESSION_DATA) means this session never get saved into redis before. | 压根还没有序列化入 redis；
-      // #2 compare between the key-value serial data from redis and tomcat jvm, if not the same, means dirty, needs synchronized. | redis 存储的值与 tomcat 中的值不匹配
+      // #1 data is null (includes NULL_SESSION_DATA) means this session never get saved into redis before. 
+      //    | 压根还没有序列化入 redis；
+      // #2 compare between the key-value serial data from redis and tomcat jvm, if not the same, means dirty, needs synchronized. 
+      //    | redis 存储的 session 值与 当前 tomcat 中的 session 值不匹配
       
       if ( data == null || Arrays.equals( NULL_SESSION_DATA, data ) || !Arrays.equals( serializer.deserialize(data).getSerialData(), serializer.makeBindaryData( redisSession ) ) ) {
 
