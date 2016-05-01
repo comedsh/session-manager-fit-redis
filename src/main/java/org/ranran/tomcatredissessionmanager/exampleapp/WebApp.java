@@ -22,7 +22,7 @@ import javax.servlet.*;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
-import org.ranran.tomcat.redissessions.*;
+import org.ranran.tomcat.redissession.*;
 
 public class WebApp implements spark.servlet.SparkApplication {
 

@@ -43,6 +43,10 @@ olist.remove(2);
     初始设置的值如下：<br>
     
 <% 
+    out.println("SESSIONID: "+ request.getSession().getId() );
+	
+	out.println("<br>");
+
     javax.servlet.http.HttpSession session = request.getSession();
     
     out.println( "key: hello; value: " + session.getAttribute("hello") );

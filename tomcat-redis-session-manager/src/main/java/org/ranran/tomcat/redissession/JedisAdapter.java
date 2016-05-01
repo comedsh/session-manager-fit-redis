@@ -1,4 +1,4 @@
-package org.ranran.tomcat.redissessions;
+package org.ranran.tomcat.redissession;
 
 import java.util.Collections;
 import java.util.List;

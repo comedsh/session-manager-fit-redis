@@ -1,4 +1,4 @@
-package org.ranran.tomcat.redissessions;
+package org.ranran.tomcat.redissession;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -9,6 +9,7 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Session;
 import org.apache.catalina.core.StandardContext;
 import org.junit.Test;
+import org.ranran.tomcat.redissession.RedisSessionManager;
 
 /**
  * 
@@ -35,7 +36,7 @@ public class RedisSessionManagerTest {
 	 * Notice, you can't use keys * to find all keys from the redis cluster environment instead you need to check it on each node separately by keys *
 	 *  
 	 */
-	static final String SESSION_ID = "C2371C5E42E025001101C7F000C315F9";
+	static final String SESSION_ID = "7AF91BE06936D408841DDB26330BB8EE.clusternodeA";
 	
 	
 	/**

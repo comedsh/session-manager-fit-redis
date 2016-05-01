@@ -3,7 +3,7 @@
   
   <Loader delegate="true" />
   
-  <Valve className="org.ranran.tomcat.redissessions.RedisSessionHandlerValve" />
+  <Valve className="org.ranran.tomcat.redissession.RedisSessionHandlerValve" />
   
   <!-- 
   <Manager className="org.ranran.tomcat.redissessions.RedisSessionManager"
@@ -14,7 +14,7 @@
            maxInactiveInterval="600" />
   -->
 
-  <Manager className="org.ranran.tomcat.redissessions.RedisSessionManager"
+  <Manager className="org.ranran.tomcat.redissession.RedisSessionManager"
            cluster="10.211.55.8:7001,10.211.55.8:7002,10.211.55.8:7003,10.211.55.16:7004,10.211.55.16:7005,10.211.55.16:7006"
            maxInactiveInterval="600" 
            />

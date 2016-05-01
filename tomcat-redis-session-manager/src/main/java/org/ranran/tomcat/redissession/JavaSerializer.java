@@ -1,4 +1,4 @@
-package org.ranran.tomcat.redissessions;
+package org.ranran.tomcat.redissession;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

@@ -8,7 +8,7 @@ import spark.ResponseTransformerRoute;
 import spark.Session;
 import javax.servlet.http.HttpSession;
 
-import org.ranran.tomcat.redissessions.RedisSession;
+import org.ranran.tomcat.redissession.RedisSession;
 
 public abstract class JsonTransformerRoute extends ResponseTransformerRoute {
 

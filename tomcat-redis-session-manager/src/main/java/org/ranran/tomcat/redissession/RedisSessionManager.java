@@ -1,4 +1,4 @@
-package org.ranran.tomcat.redissessions;
+package org.ranran.tomcat.redissession;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -62,8 +62,6 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
 
   protected static String name = "RedisSessionManager";
 
-  protected String serializationStrategyClass = "org.ranran.tomcat.redissessions.JavaSerializer";
-
   /**
    * The lifecycle event support for this component.
    */
@@ -107,10 +105,6 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
 
   public void setPassword(String password) {
     this.password = password;
-  }
-
-  public void setSerializationStrategyClass(String strategy) {
-    this.serializationStrategyClass = strategy;
   }
 
   public String getSentinels() {
@@ -186,7 +180,7 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
 		return new JedisAdapter(jedisCluster);
 	}
 
-    throw new RuntimeException("no expected connection retrived");
+    throw new SessionManagerException("no expected connection retrived");
     
   }
   
@@ -317,36 +311,46 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
 
   @Override
   public Session createSession(String requestedSessionId) {
+	  
     RedisSession session = null;
+    
     String sessionId = null;
+    
     String jvmRoute = getJvmRoute();
     
+    if( jvmRoute == null )
+    	
+    	throw new SessionManagerException("jvmRoute must set to avoid session duplication under tomcat cluster environment");
+    
     Boolean error = true;
+    
     JedisAdapter jedis = null;
+    
     try {
     	
       jedis = acquireConnection();
 
-      // Ensure generation of a unique session identifier.
-      // 这里预先调用 jedis.setnx 保存一个空值的 sessionid 的意欲何为？在 redis 中预先站住位置？这里的 SESSIONID 不是已经可以确保是唯一的了？难道作者担心，如果是同一个 jvmRoute，同时生成了一个相同的 SESSIONID？
+      // if request session id != null, means the session id from cookie;
+      // but <notice> that, because the incoming request session id is generated via redis-session managed container, so it will always appends the jvmRoute suffix
+      // this is why I removed the code sessionIdWithJvmRoute...
       
       if ( null != requestedSessionId ) {
     	  
-        sessionId = sessionIdWithJvmRoute( requestedSessionId, jvmRoute );
+        // sessionId = sessionIdWithJvmRoute( requestedSessionId, jvmRoute );
         
-        if ( jedis.setnx(sessionId.getBytes(), NULL_SESSION_DATA ) == 0L ) {
+        if( jedis.get( requestedSessionId.getBytes() ) != null ){
         	
-          sessionId = null;
-          
+        	currentSession.set(null);
+        	
+        	currentSessionId.set(null);
+        	
+        	return null; // the session get already created. find session should take over it.
         }
         
       } else {
-    	  
-        do {
         	
-          sessionId = sessionIdWithJvmRoute( generateSessionId(), jvmRoute );
-          
-        } while ( jedis.setnx( sessionId.getBytes(), NULL_SESSION_DATA ) == 0L ); // 1 = key set; 0 = key already existed
+    	// generate the unique sessionid under tomcat clusters.  
+        sessionId = sessionIdWithJvmRoute( generateSessionId(), jvmRoute );
         
       }
 
@@ -359,16 +363,25 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
       error = false;
 
       if (null != sessionId) {
+    	  
         session = (RedisSession)createEmptySession();
+        
         session.setNew(true);
+        
         session.setValid(true);
+        
         session.setCreationTime(System.currentTimeMillis());
+        
         session.setMaxInactiveInterval(getMaxInactiveInterval());
+        
         session.setId(sessionId);
+        
         session.tellNew();
+        
       }
 
       currentSession.set(session);
+      
       currentSessionId.set(sessionId);
 
       if (null != session) {
@@ -424,7 +437,7 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
       save(session);
     } catch (IOException ex) {
       log.warn("Unable to add to session manager store: " + ex.getMessage());
-      throw new RuntimeException("Unable to add to session manager store.", ex);
+      throw new SessionManagerException("Unable to add to session manager store.", ex);
     }
   }
 
@@ -432,7 +445,7 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
   public Session findSession(String id) throws IOException {
 	  
     RedisSession session = null;
-
+    
     if (null == id) {
 
       currentSession.set(null);
@@ -655,12 +668,13 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
       
       byte[] data = this.loadSessionDataFromRedis( redisSession.getId() ); 
       
-      // #1 data is null (includes NULL_SESSION_DATA) means this session never get saved into redis before. 
+      // 只有如下两种情况下，需要 save into redis.
+      // #1 data is null means this session never get saved into redis before. 
       //    | 压根还没有序列化入 redis；
       // #2 compare between the key-value serial data from redis and tomcat jvm, if not the same, means dirty, needs synchronized. 
       //    | redis 存储的 session 值与 当前 tomcat 中的 session 值不匹配
       
-      if ( data == null || Arrays.equals( NULL_SESSION_DATA, data ) || !Arrays.equals( serializer.deserialize(data).getSerialData(), serializer.makeBindaryData( redisSession ) ) ) {
+      if ( data == null || !Arrays.equals( serializer.deserialize(data).getSerialData(), serializer.makeBindaryData( redisSession ) ) ) {
 
         log.trace("Save was determined to be necessary");
 
@@ -733,6 +747,7 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
   }
 
   public void afterRequest() {
+	  
     RedisSession redisSession = currentSession.get();
     
     if (redisSession != null) {
@@ -831,9 +846,7 @@ public class RedisSessionManager extends ManagerBase implements Lifecycle {
   
   protected void initializeSerializer() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
     
-	log.info("Attempting to use serializer :" + serializationStrategyClass);
-    
-    serializer = (Serializer) Class.forName(serializationStrategyClass).newInstance();
+    serializer = new JavaSerializer();
 
     Loader loader = null;
 

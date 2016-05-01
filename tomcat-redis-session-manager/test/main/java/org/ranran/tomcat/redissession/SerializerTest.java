@@ -1,4 +1,4 @@
-package org.ranran.tomcat.redissessions;
+package org.ranran.tomcat.redissession;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -13,6 +13,10 @@ import org.apache.catalina.util.CustomObjectInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.ranran.domain.User;
+import org.ranran.tomcat.redissession.JavaSerializer;
+import org.ranran.tomcat.redissession.RedisSession;
+import org.ranran.tomcat.redissession.RedisSessionManager;
+import org.ranran.tomcat.redissession.SessionSerializationMetadata;
 
 
 /**
